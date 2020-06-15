@@ -4,6 +4,14 @@ buildscript {
     }
 }
 
+def printOutput(def output) {
+    return tasks.create("printOutput") {
+        for (line in output.toString().readLines()) {
+            println "#educational_plugin" + line
+        }
+    }
+}
+
 subprojects {
     apply plugin: 'application'
     apply plugin: 'java'
@@ -22,9 +30,19 @@ subprojects {
     }
 
     sourceSets {
-        main.java.srcDir 'src'
-        test.java.srcDir 'test'
+        main {
+            java.srcDir 'src'
+        }
+        test {
+            java.srcDir 'test'
+        }
     }
+
+    mainClassName = project.hasProperty("mainClass") ? project.getProperty("mainClass") : ""
+
+    def runOutput = new ByteArrayOutputStream()
+    tasks.run.setStandardOutput(runOutput)
+    tasks.run.doLast { printOutput(runOutput) }
 
     test {
         systemProperty "file.encoding", "utf-8"
@@ -45,6 +63,19 @@ subprojects {
     tasks.withType(JavaCompile) {
         options.encoding = 'UTF-8'
     }
+}
+
+project(':util') {
+    dependencies {
+        compile group: 'junit', name: 'junit', version: '4.12'
+    }
+}
+
+configure(subprojects.findAll {it.name != 'util'}) {
+  dependencies {
+    compile project(':util').sourceSets.main.output
+    testCompile project(':util').sourceSets.test.output
+  }
 }
 
 wrapper {
